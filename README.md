@@ -12,6 +12,8 @@
 SimpleSpringHelper.initStaticApplicationContext(App.class);
 ```
 这样就启动了一个容器  
+传入的Class本质上是一个包扫描的起始路径所以请在最外层调用此方法
+
 如果你想getBean
 ```
 ApplicationContext context = SimpleSpringHelper.getStaticContext();
