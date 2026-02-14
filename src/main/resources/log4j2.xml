@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+
+    <!-- 全局属性 -->
+    <Properties>
+        <!-- 日志目录 -->
+        <Property name="LOG_HOME">logs</Property>
+        <!-- 日志格式 -->
+        <Property name="LOG_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+        </Property>
+    </Properties>
+
+    <!-- 输出源 -->
+    <Appenders>
+        <!-- 控制台 -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
+        <!-- 普通文件（滚动） -->
+        <RollingFile name="File"
+                     fileName="${LOG_HOME}/app.log"
+                     filePattern="${LOG_HOME}/app-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <!-- 按天滚动 -->
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <!-- 保留 30 天 -->
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+
+    </Appenders>
+
+    <!-- 日志规则 -->
+    <Loggers>
+        <!-- 根日志：INFO -->
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <!--<AppenderRef ref="File"/>-->
+        </Root>
+    </Loggers>
+
+</Configuration>
