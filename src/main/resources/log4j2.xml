@@ -36,7 +36,7 @@
     <!-- 日志规则 -->
     <Loggers>
         <!-- 根日志：INFO -->
-        <Root level="INFO">
+        <Root level="DEBUG">
             <AppenderRef ref="Console"/>
             <!--<AppenderRef ref="File"/>-->
         </Root>

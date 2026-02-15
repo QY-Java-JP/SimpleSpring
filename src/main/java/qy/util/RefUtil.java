@@ -1,12 +1,13 @@
 package qy.util;
 
 import org.jetbrains.annotations.Nullable;
+import qy.exception.HasNestingException;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 public class RefUtil {
     // 给一个属性赋值
@@ -60,4 +61,46 @@ public class RefUtil {
 
         return true;
     }
+
+    // 获取List的泛型
+    public static Class<?> getNoNestingListGenericType(Field field) throws HasNestingException {
+        // 只拿一层即可 其他情况异常
+        final Type genericType = field.getGenericType();
+        if (!(genericType instanceof ParameterizedType pt)) {
+            throw new RuntimeException(field.getName() + "不是一个List");
+        }
+        if (!List.class.isAssignableFrom((Class<?>) pt.getRawType())) {
+            throw new RuntimeException(field.getName() + "不是一个List");
+        }
+
+        final Type listType = pt.getActualTypeArguments()[0];
+        if (!(listType instanceof Class<?> typeClass)) {
+            throw new HasNestingException();
+        }
+
+        return typeClass;
+    }
+
+    // 获取map的泛型
+    public static Class<?>[] getNoNestingMapGenericType(Field field) throws HasNestingException{
+        final Type genericType = field.getGenericType();
+        if (!(genericType instanceof ParameterizedType pt)) {
+            throw new RuntimeException(field.getName() + "不是一个Map");
+        }
+        if (!Map.class.isAssignableFrom((Class<?>) pt.getRawType())) {
+            throw new RuntimeException(field.getName() + "不是一个Map");
+        }
+
+        final Type[] types = pt.getActualTypeArguments();
+        final Class<?>[] retArray = new Class[2];
+        for (int i = 0; i < 2; i++) {
+            if (!(types[i] instanceof Class<?> typeClass)) {
+                throw new HasNestingException();
+            }
+            retArray[i] = typeClass;
+        }
+
+        return retArray;
+    }
+
 }

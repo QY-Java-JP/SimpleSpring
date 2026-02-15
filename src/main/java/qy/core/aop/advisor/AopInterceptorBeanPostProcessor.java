@@ -6,10 +6,7 @@ import qy.core.ioc.factory.EarlyBeanPostProcessor;
 import qy.exception.bean.BeanCreateException;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class AopInterceptorBeanPostProcessor implements EarlyBeanPostProcessor {
@@ -18,6 +15,8 @@ public class AopInterceptorBeanPostProcessor implements EarlyBeanPostProcessor {
 
     // 所有切面
     private final List<Aspect> aspectList;
+    // 被代理过的bean
+    private final Set<String> proxiedBeans = new HashSet<>();
 
     public AopInterceptorBeanPostProcessor(List<Aspect> aspectList) {
         this.aspectList = aspectList;
@@ -25,6 +24,21 @@ public class AopInterceptorBeanPostProcessor implements EarlyBeanPostProcessor {
 
     @Override
     public Object getEarlyBeanReference(Object bean, String beanName) throws BeanCreateException {
+        proxiedBeans.add(beanName);
+        return wrapIfNecessary(bean, beanName);
+    }
+
+    @Override
+    public Object postProcessorAfterInit(Object bean, String beanName) throws BeanCreateException {
+        // 看看有没有被代理过 没有就代理
+        if (proxiedBeans.contains(beanName)) return bean;
+
+        proxiedBeans.add(beanName);
+        return wrapIfNecessary(bean, beanName);
+    }
+
+    // 代理
+    private Object wrapIfNecessary(Object bean, String beanName){
         // 遍历每个方法 整理出所有方法对应的切片
         final Class<?> beanClass = bean.getClass();
         final Map<Method, List<Advice>> methodAdviceMap = new HashMap<>();
@@ -44,6 +58,7 @@ public class AopInterceptorBeanPostProcessor implements EarlyBeanPostProcessor {
         enhancer.setCallback(new AopInterceptor(bean, methodAdviceMap));
 
         log.debug("bean:{} 生成cglib代理对象", beanName);
+
         return enhancer.create();
     }
 

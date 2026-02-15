@@ -1,8 +1,8 @@
-package qy.test;
+package qy.example.listAutowired;
 
 import qy.annotation.ioc.Autowired;
 import qy.annotation.ioc.Component;
-import qy.test.aop.T1;
+import qy.example.aop.T1;
 
 @Component
 public class BlogService {

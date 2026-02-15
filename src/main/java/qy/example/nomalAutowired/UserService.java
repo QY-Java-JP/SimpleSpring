@@ -1,4 +1,4 @@
-package qy.test;
+package qy.example.nomalAutowired;
 
 import qy.annotation.ioc.Autowired;
 import qy.annotation.ioc.Component;
@@ -15,4 +15,7 @@ public class UserService {
         System.out.println("UserService init");
     }
 
+    public void t1(){
+        System.out.println(blogService);
+    }
 }
