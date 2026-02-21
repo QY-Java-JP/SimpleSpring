@@ -2,8 +2,6 @@ package qy.core.aop;
 
 import net.sf.cglib.proxy.MethodProxy;
 
-import java.lang.reflect.Method;
-
 public class JoinPoint {
 
     // 被代理前的对象

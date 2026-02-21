@@ -29,6 +29,8 @@ public class ApplicationContext implements BeanFactory {
 
     // 启动类class
     private final Class<?> runApplicationClass;
+    // 是否初始化过
+    private boolean initialized = false;
 
     ApplicationContext(Class<?> runClass){
         this.runApplicationClass = runClass;
@@ -45,21 +47,30 @@ public class ApplicationContext implements BeanFactory {
         beanFactoryPostProcessors.add(new AspectScannerBeanDefinitionPostProcess(beanFactory, allAspect));
         beanFactory.addBeanPostProcessor(new AopInterceptorBeanPostProcessor(allAspect));
 
-        refresh();
+        init();
     }
 
-    public void refresh(){
-        // 调用bean工厂的后置处理器 收集bean描述
-        log.info("开始执行beanFactoryPostProcessor");
-        applyBeanFactoryPostProcessor();
+    public void init(){
+        synchronized (this) {
+            if (initialized) {
+                log.warn("容器已初始化过 尝试再次初始化");
+                return;
+            }
 
-        // 生产所有bean的后置处理器
-        log.info("开始生产bean后置处理器");
-        createAllBeanPostProcess();
+            // 调用bean工厂的后置处理器 收集bean描述
+            log.info("开始执行beanFactoryPostProcessor");
+            applyBeanFactoryPostProcessor();
 
-        // 生产所有单例bean
-        log.info("开始建造所有bean");
-        createAllBeanDefinitionBean();
+            // 生产所有bean的后置处理器
+            log.info("开始生产bean后置处理器");
+            createAllBeanPostProcess();
+
+            // 生产所有单例bean
+            log.info("开始建造所有bean");
+            createAllBeanDefinitionBean();
+
+            initialized = true;
+        }
     }
 
     // 调用所有bean工厂的后置处理器
