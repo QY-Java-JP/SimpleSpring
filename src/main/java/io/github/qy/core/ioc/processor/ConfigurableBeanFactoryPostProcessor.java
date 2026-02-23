@@ -39,6 +39,7 @@ public class ConfigurableBeanFactoryPostProcessor implements BeanDefinitionPostP
             List<Method> methods = BeanUtil.findHasThisAnnotationMethods(bd.getBeanType(), Bean.class);
             for (Method m : methods) {
                 Object methodBean = createBeanFromBeanMethod(configBean, bd.getBeanName(), m);
+                beanFactory.registerBeanDefinition(new BeanDefinition(m.getName(), methodBean.getClass()));
                 beanFactory.registerCompleteBean(m.getName(), methodBean);
             }
         }

@@ -110,9 +110,6 @@ public class DefaultBeanFactory implements BeanFactory {
 
     @Override
     public void registerCompleteBean(String beanName, Object bean) throws BeanCreateException{
-        if (beanDefinitionMap.containsKey(beanName)) {
-            throw new BeanCreateException(beanName + "已存在");
-        }
         if (completeBeanMap.containsKey(beanName)) {
             throw new BeanCreateException(beanName + " 已存在");
         }
