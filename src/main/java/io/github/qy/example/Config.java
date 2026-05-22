@@ -2,6 +2,7 @@ package io.github.qy.example;
 
 import io.github.qy.annotation.ioc.Bean;
 import io.github.qy.annotation.ioc.Configurable;
+import io.github.qy.example.nomalAutowired.BlogService;
 import io.github.qy.example.nomalAutowired.UserService;
 
 import java.util.Random;
@@ -15,8 +16,8 @@ public class Config {
     }
 
     @Bean
-    public UserService userService(){
-        return new UserService();
+    public UserService userService(BlogService blogService){
+        return new UserService(blogService);
     }
 
 }

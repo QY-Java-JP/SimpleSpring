@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="SimpleSpring:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/SimpleSpring_jar</output-path>
+    <root id="archive" name="SimpleSpring.jar">
+      <element id="module-output" name="SimpleSpring" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/slf4j/slf4j-api/2.0.12/slf4j-api-2.0.12.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/jetbrains/annotations/24.0.1/annotations-24.0.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/cglib/cglib/3.3.0/cglib-3.3.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/ow2/asm/asm/7.1/asm-7.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/slf4j/slf4j-simple/2.0.12/slf4j-simple-2.0.12.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

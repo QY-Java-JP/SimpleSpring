@@ -1,5 +1,9 @@
 package io.github.qy.core.ioc.factory;
 
+import io.github.qy.annotation.ioc.Autowired;
+import io.github.qy.core.ioc.ConstructorResolver;
+import io.github.qy.exception.HasNestingException;
+import io.github.qy.util.BeanUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import io.github.qy.bean.ioc.BeanDefinition;
@@ -12,8 +16,7 @@ import io.github.qy.exception.bean.BeanCreateException;
 import io.github.qy.util.RefUtil;
 import io.github.qy.util.StringUtil;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -139,6 +142,32 @@ public class DefaultBeanFactory implements BeanFactory {
         return beanDefinitionMap;
     }
 
+    @Nullable
+    @Override
+    public Object resolveDependency(Type dependencyType, String beanName, @Nullable String autowiredBeanName) {
+        // 支持List Map 普通
+        Object retObj = null;
+
+        // 如果这是一个class
+        if (dependencyType instanceof Class<?> dependencyClass) {
+            // 不是List也不是map 是一般情况
+            retObj = findThisTypeOrNameBean(dependencyClass, beanName, autowiredBeanName);
+        }
+        // 如果不是class 则是一个泛型
+        else if (dependencyType instanceof ParameterizedType parameterizedType) {
+            // 看看是List还是Map
+            // TODO 我们这次选择用泛型的个数来确定 不太好但可以做到
+            final Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+            if (actualTypeArguments.length == 1) {
+                retObj = findThisTypeBeans(actualTypeArguments[0], beanName);
+            } else if (actualTypeArguments.length == 2) {
+                retObj = findThisTypeBeansAndName(actualTypeArguments[0], actualTypeArguments[1]);
+            }
+        }
+
+        return retObj;
+    }
+
     // 获取bean
     @Nullable
     private Object doGetBean(String beanName){
@@ -155,11 +184,9 @@ public class DefaultBeanFactory implements BeanFactory {
     // 构造bean
     private Object doCreateBean(BeanDefinition bd){
         // 我们目前不考虑其他构造方式 我们只搞无参构造
-        Object bean = newBeanByDefinition(bd);
+        BeanWrapper bw = createBeanInstance(bd);
         // 后置修改bean描述
         applyMergedBdPostProcessor(bd);
-
-        BeanWrapper bw = new BeanWrapper(bean);
         log.debug("bean:{} 无参构造构造完毕", bd.getBeanName());
 
         // aware
@@ -200,17 +227,34 @@ public class DefaultBeanFactory implements BeanFactory {
     }
 
     // 构造一个对象
-    private Object newBeanByDefinition(BeanDefinition definition){
-        final Constructor<?> emptyCons = RefUtil.findConstructor(definition.getBeanType());
-        if (emptyCons == null) {
-            throw new BeanCreateException("bean:" + definition.getBeanName() + "没有无参构造");
+    private BeanWrapper createBeanInstance(BeanDefinition bd){
+        // 首先找到构造
+        // 我们首先找@Autowrited的 如果有则就用这个 如果有多个就用第一个 (这里和Spring的处理不一样)
+        // 如果没有这个注解 则找参数最多的那个
+        final Class<?> beanType = bd.getBeanType();
+        final Constructor<?>[] allCons = beanType.getConstructors();
+
+        Constructor<?> selectedCons = null;
+        int nowConsArgsCount = 0;
+        for (Constructor<?> cons : allCons) {
+            // 首先看看是不是autowrited 如果是赋值直接退出循环
+            if (cons.isAnnotationPresent(Autowired.class)) {
+                selectedCons = cons;
+                break;
+            }
+
+            // 比较一下参数 如果这个参数比上一个多 则用这个
+            if (cons.getParameterCount() >= nowConsArgsCount) {
+                nowConsArgsCount = cons.getParameterCount();
+                selectedCons = cons;
+            }
         }
 
-        try {
-            return emptyCons.newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
+        if (selectedCons == null) {
+            throw new BeanCreateException("bean:" + bd.getBeanName() + "没有合适的构造");
         }
+
+        return new ConstructorResolver(this).autowireConstructor(bd, selectedCons, null);
     }
 
     // 执行bean后置处理器以及init
@@ -364,5 +408,58 @@ public class DefaultBeanFactory implements BeanFactory {
         }
 
         beanNameByTypeMap.put(type, names);
+    }
+
+    // 注入List
+    private List<Object> findThisTypeBeans(Type dependencyClassType, String beanName) throws BeanCreateException {
+        // 我们只处理List<?>的情况 不处理List<List<?>>等复杂情况
+        if (dependencyClassType instanceof ParameterizedType) {
+            throw new BeanCreateException("构造" + beanName + "仅支持单层List<> 请勿使用嵌套泛型");
+        }
+
+        return getBean((Class<?>) dependencyClassType);
+    }
+
+    // 注入map
+    private Map<String, Object> findThisTypeBeansAndName(Type dependencyKeyClassType, Type dependencyValueClassType)
+            throws BeanCreateException {
+        // 看看kv是不是都是单层关系 而不是Map<List<String>, ?> 这种嵌套
+        if (dependencyKeyClassType instanceof ParameterizedType || dependencyValueClassType instanceof ParameterizedType) {
+            throw new BeanCreateException("构造Map时只支持单层Map不支持kv嵌套");
+        }
+
+        // 还要检查key是否是String
+        if (!String.class.isAssignableFrom((Class<?>) dependencyKeyClassType)) {
+            throw new BeanCreateException("Map的key只支持String类型");
+        }
+
+        final List<String> names = getBeanNames((Class<?>) dependencyValueClassType);
+        final Map<String, Object> retMap = new HashMap<>();
+        names.forEach(n -> retMap.put(n, getBean(n)));
+
+        return retMap;
+    }
+
+    // 注入普通属性
+    private Object findThisTypeOrNameBean(Class<?> beanClass, String beanName, @Nullable String autowiredName){
+        final List<Object> fileByTypeList = getBean(beanClass);
+        // 如果有多个也用name
+        if (fileByTypeList.size() == 1) {
+            return fileByTypeList.get(0);
+        }
+
+        // 用Name
+        if (!StringUtil.hasText(autowiredName)) {
+            throw new BeanCreateException("在给bean:" + beanName + "解析构造时 找到了多个类型为" + beanClass + "的类" +
+                    "但没有指定用哪个 请使用@Autowired指定beanName");
+        }
+
+        final Object fileByName = getBean(autowiredName);
+        if (fileByName == null) {
+            throw new BeanCreateException("在给bean:" + beanName + "解析依赖时 类型:" + beanClass
+                    + "未找到合适的类型且名字为" + autowiredName + "的类不存在");
+        }
+
+        return fileByName;
     }
 }

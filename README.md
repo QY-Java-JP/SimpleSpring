@@ -39,7 +39,7 @@ public class UserService {
 使用方式和Spring如出一辙 只不过缺失某些功能  
 1. 不提供@PreDestroy
 2. 只有@Component 没有@Service @Controller
-3. 每个bean只支持无参构造 没有Spring复杂的推断构造方法
+3. 关于推断过早仅支持一般类型 List<> Map<> 不支持多层泛型嵌套
 4. @Autowired仅限字段注入 不支持setter注入
 
 ### 2. 配置类

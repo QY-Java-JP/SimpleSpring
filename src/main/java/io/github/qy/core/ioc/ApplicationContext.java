@@ -15,6 +15,7 @@ import io.github.qy.core.ioc.processor.ConfigurableBeanFactoryPostProcessor;
 import io.github.qy.exception.bean.BeanCreateException;
 import io.github.qy.util.BeanUtil;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -190,5 +191,10 @@ public class ApplicationContext implements BeanFactory {
     @Override
     public Map<String, BeanDefinition> getBeanDefinitionMap() {
         return beanFactory.getBeanDefinitionMap();
+    }
+
+    @Override
+    public @Nullable Object resolveDependency(Type dependencyType, String beanName, String autowiredBeanName) {
+        return beanFactory.resolveDependency(dependencyType, beanName, autowiredBeanName);
     }
 }

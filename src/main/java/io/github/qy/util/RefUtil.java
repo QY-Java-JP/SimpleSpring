@@ -36,16 +36,6 @@ public class RefUtil {
         }
     }
 
-    // 拿取一个构造方法
-    @Nullable
-    public static Constructor<?> findConstructor(Class<?> clazz, Class<?>... args){
-        try {
-            return clazz.getConstructor(args);
-        } catch (NoSuchMethodException e) {
-            return null;
-        }
-    }
-
     // 执行某个方法
     public static boolean runMethod(Object o, String methodName, Object... args){
         final Class<?> clazz = o.getClass();
@@ -59,25 +49,6 @@ public class RefUtil {
         }
 
         return true;
-    }
-
-    // 获取List的泛型
-    public static Class<?> getNoNestingListGenericType(Field field) throws HasNestingException {
-        // 只拿一层即可 其他情况异常
-        final Type genericType = field.getGenericType();
-        if (!(genericType instanceof ParameterizedType pt)) {
-            throw new RuntimeException(field.getName() + "不是一个List");
-        }
-        if (!List.class.isAssignableFrom((Class<?>) pt.getRawType())) {
-            throw new RuntimeException(field.getName() + "不是一个List");
-        }
-
-        final Type listType = pt.getActualTypeArguments()[0];
-        if (!(listType instanceof Class<?> typeClass)) {
-            throw new HasNestingException();
-        }
-
-        return typeClass;
     }
 
     // 获取map的泛型
